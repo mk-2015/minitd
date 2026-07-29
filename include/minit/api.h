@@ -38,4 +38,10 @@ extern const size_t mount_table_size;
 
 void mpanic(const char* reason);
 
+void mpower_off(void);
+void mreboot(void);
+void mshutdown(int cmd);    
+
+#define MVER "1.0.0"
+
 #endif
