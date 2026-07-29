@@ -5,36 +5,32 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/reboot.h>
+#include <sys/types.h>
 #include <minit/api.h>
 
-static void sigchld_handler(int sig) {
-    (void)sig;
-}
+volatile sig_atomic_t g_shutdown_requested = 0;
+volatile sig_atomic_t g_reboot_requested = 0;
 
 void __m_loop(pid_t primary_child) {
-    struct sigaction sa;
-    sa.sa_handler = sigchld_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_NOCLDSTOP; 
-    sigaction(SIGCHLD, &sa, NULL);
+    sigset_t empty_mask;
+    sigemptyset(&empty_mask);
 
-    while (1) {
-        int status;
-        pid_t reaped;
-        while ((reaped = waitpid(-1, &status, WNOHANG)) > 0) {
-            printf("[ OK ] Reaped zombie PID %d\n", reaped);
+    while (!g_shutdown_requested && !g_reboot_requested) {
+        sigsuspend(&(sigset_t){0});
 
-            if (reaped == primary_child) {
-                printf("[ OK ] Primary process exited. Shutting down...\n");
-                return;
-            }
-        }
-
-        if (reaped == -1 && errno == ECHILD) {
-            // No children left at all
+        if (primary_child > 0 && kill(primary_child, 0) == -1 && errno == ESRCH) {
+            printf("[ LOOP ] Primary shell (PID %d) exited.\n", primary_child);
             break;
         }
+    }
 
-        pause();
+    if (g_reboot_requested) {
+        printf("[ INIT ] Reboot requested. Executing reboot sequence...\n");
+        mreboot();
+    } else if (g_shutdown_requested) {
+        printf("[ INIT ] Shutdown requested or shell exited. Powering off...\n");
+        mpower_off();
+    } else {
+        mpanic("Somehow killed PID 1 [MINITD]");
     }
 }
