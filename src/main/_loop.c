@@ -19,7 +19,7 @@ void __m_loop(pid_t primary_child) {
         sigsuspend(&(sigset_t){0});
 
         if (primary_child > 0 && kill(primary_child, 0) == -1 && errno == ESRCH) {
-            printf("[ LOOP ] Primary shell (PID %d) exited.\n", primary_child);
+            printf("[ INIT ] Primary shell (PID %d) exited.\n", primary_child);
             break;
         }
     }
