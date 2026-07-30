@@ -20,7 +20,7 @@ void __m_loop(pid_t primary_child) {
 
         if (primary_child > 0 && kill(primary_child, 0) == -1 && errno == ESRCH) {
             printf("[ INIT ] Primary shell (PID %d) exited.\n", primary_child);
-            break;
+            g_shutdown_requested = 1;
         }
     }
 

@@ -29,4 +29,17 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
-.PHONY: all clean
+prepmkinit:
+	@sudo mkinitcpio -c ./base/minit-mkinitcpio.conf -g ./base/initramfs.img -k $(shell uname -r)
+	@dd if=/dev/zero of=./base/disk.img bs=1M count=512
+	@mkfs.ext4 -F ./base/disk.img
+
+	@sudo umount /tmp/_root 2>/dev/null || true
+	@mkdir -p /tmp/_root
+	@sudo mount -o loop ./base/disk.img /tmp/_root
+	@sudo cp -a ./base/rootfs/* /tmp/_root/
+	@sudo mkdir /tmp/_root/sbin
+	@sudo cp -a ./base/rootfs/init /tmp/_root/sbin/init
+	@sudo umount /tmp/_root
+
+.PHONY: all clean prepmkinit

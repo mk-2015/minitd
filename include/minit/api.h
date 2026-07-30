@@ -18,6 +18,11 @@
 #define MS_STRICTATIME 16777216
 #endif
 
+#define MVER "1.0.0"
+#define MAX_CHARS_HOSTNAME 255
+#define MAX_CHARS_ENVNAME 255
+#define MAX_CHARS_ENVCONTENT 4096
+
 typedef enum MountMode {
     MNT_NONE     = 0,
     MNT_FATAL    = 1 << 0, // Panic or stop if mounting fails
@@ -33,15 +38,21 @@ typedef struct {
     MountMode mode;      // Behavior flags
 } MountPoint;
 
+typedef struct {
+    char name[MAX_CHARS_ENVNAME];
+    char content[MAX_CHARS_ENVCONTENT];
+} EnvironVar;
+
 extern const MountPoint mount_table[];
 extern const size_t mount_table_size;
+
+extern const EnvironVar environ_default_table[];
+extern const size_t environ_default_table_size;
 
 void mpanic(const char* reason);
 
 void mpower_off(void);
 void mreboot(void);
 void mshutdown(int cmd);    
-
-#define MVER "1.0.0"
 
 #endif

@@ -1,5 +1,7 @@
 .vscode
 bin/
 *.o
-rootfs/
+
+disk.img
 initramfs.cpio.gz
+initramfs.img

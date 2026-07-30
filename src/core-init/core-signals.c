@@ -25,7 +25,7 @@ static void sigterm_handler(int sig) {
     g_shutdown_requested = 1;
 }
 
-static void sigint_handler(int sig) {
+static void sigint_handler(int sig) {   
     (void)sig;
     printf("[ INIT ] Received SIGINT - initiating system reboot...\n");
     g_reboot_requested = 1;

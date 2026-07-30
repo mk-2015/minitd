@@ -59,6 +59,14 @@ const MountPoint mount_table[] = {
         .mode = MNT_FATAL | MNT_CREATE
     },
     {
+        .what = "tmpfs",
+        .where = "/tmp",
+        .type = "tmpfs",
+        .options = "mode=1777",
+        .flags = MS_NOSUID | MS_NODEV | MS_STRICTATIME,
+        .mode = MNT_FATAL | MNT_CREATE
+    },
+    {
         .what = "devpts",
         .where = "/dev/pts",
         .type = "devpts",
