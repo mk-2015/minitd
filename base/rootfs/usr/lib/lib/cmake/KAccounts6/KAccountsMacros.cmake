@@ -1,0 +1,51 @@
+function(kaccounts_add_provider provider_in_file)
+    cmake_parse_arguments(PARSE_ARGV 1 KACCOUNTS_I18N "NO_INTLTOOL" "" "")
+    if (NOT IS_ABSOLUTE "${provider_in_file}")
+        set(provider_in_file ${CMAKE_CURRENT_SOURCE_DIR}/${provider_in_file})
+    endif()
+
+    get_filename_component(provider_filename ${provider_in_file} NAME_WE)
+    if(KACCOUNTS_I18N_NO_INTLTOOL)
+        install(FILES "${provider_in_file}"
+            DESTINATION "${CMAKE_INSTALL_DATADIR}/accounts/providers/kde/"
+            RENAME "${provider_filename}.provider")
+        return()
+    endif()
+    set(provider_file ${CMAKE_CURRENT_BINARY_DIR}/${provider_filename}.provider)
+    find_program(INTLTOOL_MERGE intltool-merge)
+    if(NOT INTLTOOL_MERGE)
+        message(FATAL_ERROR "Could not find required intltool-merge executable.")
+    endif()
+    execute_process(COMMAND ${INTLTOOL_MERGE} -x -u --no-translations ${provider_in_file} ${provider_file} RESULT_VARIABLE intltool_output ERROR_VARIABLE intltool_error)
+    if(NOT intltool_output EQUAL 0)
+        message(FATAL_ERROR "error processing ${provider_in_file} with ${INTLTOOL_MERGE}: ${intltool_output} ${intltool_error}")
+    endif()
+    # The suffix must match whatever we set for $XDG_CURRENT_DESKTOP
+    install(FILES ${provider_file} DESTINATION ${CMAKE_INSTALL_DATADIR}/accounts/providers/kde/)
+endfunction()
+
+function(kaccounts_add_service service_file_in)
+    cmake_parse_arguments(PARSE_ARGV 1 KACCOUNTS_I18N "NO_INTLTOOL" "" "")
+    if (NOT IS_ABSOLUTE "${service_file_in}")
+        set(service_file_in ${CMAKE_CURRENT_SOURCE_DIR}/${service_file_in})
+    endif()
+
+    get_filename_component(service_filename ${service_file_in} NAME_WE)
+    if(KACCOUNTS_I18N_NO_INTLTOOL)
+        install(FILES ${service_file_in}
+            DESTINATION ${CMAKE_INSTALL_DATADIR}/accounts/services/kde
+            RENAME "${service_filename}.service")
+        return()
+    endif()
+    set(service_file ${CMAKE_CURRENT_BINARY_DIR}/${service_filename}.service)
+    find_program(INTLTOOL_MERGE intltool-merge)
+    if(NOT INTLTOOL_MERGE)
+        message(FATAL_ERROR "Could not find required intltool-merge executable.")
+    endif()
+    execute_process(COMMAND ${INTLTOOL_MERGE} -x -u --no-translations ${service_file_in} ${service_file} RESULT_VARIABLE intltool_output ERROR_VARIABLE intltool_error)
+    if(NOT intltool_output EQUAL 0)
+        message(FATAL_ERROR "error processing ${service_file_in} with ${INTLTOOL_MERGE}: ${intltool_output} ${intltool_error}")
+    endif()
+    # The suffix must match whatever we set for $XDG_CURRENT_DESKTOP
+    install(FILES ${service_file} DESTINATION ${CMAKE_INSTALL_DATADIR}/accounts/services/kde/)
+endfunction()

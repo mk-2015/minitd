@@ -21,6 +21,9 @@ LDFLAGS += -L$(LIB_OUT_DIR) $(patsubst %,-l:%.a,$(LIB_NAMES))
 all: libs $(BIN_DIR) $(OBJ_DIR) $(TARGET)
 libs:
 	$(MAKE) -C $(LIBS_DIR) static
+	$(MAKE) -C $(LIBS_DIR)/tools/src
+	mkdir -p $(BIN_DIR)
+	cp $(LIBS_DIR)/tools/src/minitctl $(BIN_DIR)/minitctl
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
@@ -38,6 +41,16 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
 	$(MAKE) -C $(LIBS_DIR) clean
+
+install-libs: libs
+	sudo mkdir -p /usr/lib /usr/lib64
+	sudo cp -a $(LIBS_DIR)/lib/libunotifi.a /usr/lib/
+	sudo cp -a $(LIBS_DIR)/lib/libunotifi.a /usr/lib64/
+	if [ -f $(LIBS_DIR)/lib/libunotifi.so ]; then \
+		sudo cp -a $(LIBS_DIR)/lib/libunotifi.so /usr/lib/ && \
+		sudo cp -a $(LIBS_DIR)/lib/libunotifi.so /usr/lib64/; \
+	fi
+	sudo ldconfig || true
 
 prepmkinit:
 	@sudo mkinitcpio -c ./base/minit-mkinitcpio.conf -g ./base/initramfs.img -k $(shell uname -r)

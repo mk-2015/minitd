@@ -14,6 +14,8 @@ else()
     set(MINITD_LIBS "")
 endif()
 
+add_subdirectory(libs/tools/src)
+
 file(GLOB_RECURSE SRCS "src/*.c")
 
 add_executable(init ${SRCS})

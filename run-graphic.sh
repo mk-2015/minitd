@@ -3,6 +3,7 @@
 make -j4
 
 cp bin/init base/rootfs/init
+cp -r bin/* base/rootfs/bin/
 
 cd rootfs
 find . -print0 | cpio --null -ov --format=newc | gzip -9 > ../initramfs.cpio.gz

@@ -18,6 +18,7 @@ done
 if [ "$SKIP_BUILD" -eq 0 ]; then
     make -j4
     cp bin/init base/rootfs/init
+    cp -r bin/* base/rootfs/bin/
     sudo make prepmkinit
 fi
 

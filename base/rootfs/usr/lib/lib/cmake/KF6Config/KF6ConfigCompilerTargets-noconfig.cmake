@@ -1,0 +1,27 @@
+#----------------------------------------------------------------
+# Generated CMake target import file.
+#----------------------------------------------------------------
+
+# Commands may need to know the format version.
+set(CMAKE_IMPORT_FILE_VERSION 1)
+
+# Import target "KF6::kconfig_compiler" for configuration ""
+set_property(TARGET KF6::kconfig_compiler APPEND PROPERTY IMPORTED_CONFIGURATIONS NOCONFIG)
+set_target_properties(KF6::kconfig_compiler PROPERTIES
+  IMPORTED_LOCATION_NOCONFIG "${_IMPORT_PREFIX}/lib/kf6/kconfig_compiler_kf6"
+  )
+
+list(APPEND _cmake_import_check_targets KF6::kconfig_compiler )
+list(APPEND _cmake_import_check_files_for_KF6::kconfig_compiler "${_IMPORT_PREFIX}/lib/kf6/kconfig_compiler_kf6" )
+
+# Import target "KF6::kconf_update" for configuration ""
+set_property(TARGET KF6::kconf_update APPEND PROPERTY IMPORTED_CONFIGURATIONS NOCONFIG)
+set_target_properties(KF6::kconf_update PROPERTIES
+  IMPORTED_LOCATION_NOCONFIG "${_IMPORT_PREFIX}/lib/kf6/kconf_update"
+  )
+
+list(APPEND _cmake_import_check_targets KF6::kconf_update )
+list(APPEND _cmake_import_check_files_for_KF6::kconf_update "${_IMPORT_PREFIX}/lib/kf6/kconf_update" )
+
+# Commands beyond this point should not need to know the version.
+set(CMAKE_IMPORT_FILE_VERSION)

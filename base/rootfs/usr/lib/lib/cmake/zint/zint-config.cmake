@@ -1,0 +1,5 @@
+if(ON)
+    include(CMakeFindDependencyMacro)
+    find_dependency(PNG)
+endif()
+include("${CMAKE_CURRENT_LIST_DIR}/zint-targets.cmake")

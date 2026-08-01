@@ -131,7 +131,8 @@ int unotifi_send_handshake(int fd, pid_t pid, const char *service_name) {
         "\n"
         "inf:\n"
         "mypid: %d\n"
-        "service name: %s\n",
+        "service name: %s\n"
+        "\n",
         (int)pid, service_name);
 
     return (n > 0 && n < (int)sizeof(packet)) ? unotifi_send_block(fd, packet) : UNOTIFI_ERR_PROTOCOL;
@@ -231,7 +232,8 @@ int unotifi_send_data(int fd, const char *data) {
         "PROTOCOL SEND\n"
         "\n"
         "BEGIN DATA\n"
-        "%s\n",
+        "%s\n"
+        "\n",
         data);
     return (n > 0 && n < (int)sizeof(packet)) ? unotifi_send_block(fd, packet) : UNOTIFI_ERR_PROTOCOL;
 }
@@ -244,7 +246,8 @@ int unotifi_send_response(int fd, const char *data) {
         "PROTOCOL RESPONSE\n"
         "\n"
         "BEGIN RESPONSE\n"
-        "%s\n",
+        "%s\n"
+        "\n",
         data);
     return (n > 0 && n < (int)sizeof(packet)) ? unotifi_send_block(fd, packet) : UNOTIFI_ERR_PROTOCOL;
 }

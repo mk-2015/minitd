@@ -320,12 +320,15 @@ void *__unix_socket_minit(void *arg) {
                 if (unotifi_recv_data(fd, &payload) == UNOTIFI_OK && payload) {
                     __proc_cmd_unotifi(fd, payload);
                     free(payload);
+
+                    ev.events = EPOLLIN | EPOLLONESHOT;
+                    ev.data.fd = fd;
+                    epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &ev);
                 } else {
                     unotifi_send_response(fd, "ERR RECV_FAILED");
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+                    close(fd);
                 }
-
-                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
-                close(fd);
             }
         }
     }
