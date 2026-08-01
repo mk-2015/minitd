@@ -12,8 +12,9 @@
 
 // internal
 #include <minit/api.h>
+#include <minit/process.h>
 
-extern void __m_loop(pid_t primary_child);
+extern void __m_loop(void);
 extern void _early_core(const char* params);
 
 // Definition of the mount table
@@ -139,10 +140,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // 1. Set up mounts
     mount_setup();
 
-    // 2. Redirect stdin/stdout/stderr to /dev/console
     int fd = open("/dev/console", O_RDWR);
     if (fd >= 0) {
         dup2(fd, STDIN_FILENO);
@@ -154,23 +153,23 @@ int main(int argc, char *argv[]) {
         ioctl(STDIN_FILENO, TIOCSCTTY, 1);
     }
 
+    sigset_t block_mask;
+    sigemptyset(&block_mask);
+    sigaddset(&block_mask, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &block_mask, NULL);
+
+
     _early_core("");
 
     printf("[ OK ] minitd started successfully!\n\n");
 
-    // 3. Launch interactive shell
-    pid_t pidpri = fork();
-    if (pidpri == 0) {
-        printf("[ SH ] Launching shell...\n");
-        char *shell_args[] = { "/bin/sh", NULL };
-        execv(shell_args[0], shell_args);
-
-        perror("[ SH ] Failed to start shell");
-        _exit(1);
+    char *shell_args[] = { "/bin/sh", NULL };
+    ProcessNode *sh = process_create("primary-shell", "/bin/sh", shell_args, PROCESS_ONCE, 1);
+    if (sh) {
+        process_spawn(sh);
     }
 
-    // 4. Signal / Process Reaping Loop
-    __m_loop(pidpri);
+    __m_loop();
 
     mpower_off();
 }

@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/non-nine/dev/minitd/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

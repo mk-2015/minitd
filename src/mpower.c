@@ -6,16 +6,41 @@
 #include <sys/reboot.h>
 #include <sys/mount.h>
 #include <minit/api.h>
+#include <minit/process.h>
+#include <minit/service.h>
+
+extern const MountPoint mount_table[];
+extern const size_t mount_table_size;
+volatile MinitSystemState g_system_state = MINIT_STATE_RUNNING;
 
 void mshutdown(int cmd) {
-    printf("\n[ INFO ] Terminating remaining user processes...\n");
+    /* 1. Redirect logs to physical console and unbuffer stdout */
+    redirect_init_logs(IDP_CONSOLE_DIRECT);
+    setvbuf(stdout, NULL, _IONBF, 0);
+
+    if (cmd == RB_AUTOBOOT) {
+        g_system_state = MINIT_STATE_REBOOT;
+    } else {
+        g_system_state = MINIT_STATE_SHUTDOWN;
+    }
+
+    printf("\n[ INFO ] Terminating managed services...\n");
 
     signal(SIGTERM, SIG_IGN);
-    signal(SIGKILL, SIG_IGN);
+    signal(SIGINT,  SIG_IGN);
+    signal(SIGHUP,  SIG_IGN);
+
+    StopAllServices();
+
+    printf("[ INFO ] Terminating remaining user processes...\n");
+
+    signal(SIGCHLD, SIG_IGN);
 
     kill(-1, SIGTERM);
-    usleep(100000);
+    usleep(200000);
+
     kill(-1, SIGKILL);
+    usleep(50000);
 
     printf("[ OK ] Syncing disk buffers...\n");
     sync();
@@ -41,7 +66,10 @@ void mshutdown(int cmd) {
         printf("[ OK ] Rebooting system.\n");
     }
 
+    sync();
     reboot(cmd);
+
+    while (1) pause();
 }
 
 void mpower_off(void) {

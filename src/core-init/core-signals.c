@@ -3,22 +3,31 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <errno.h>
+#include <unistd.h>
 
 #include <minit/api.h>
+#include <minit/process.h>
 
 extern volatile sig_atomic_t g_shutdown_requested;
 extern volatile sig_atomic_t g_reboot_requested;
 
 static void sigchld_handler(int sig) {
     (void)sig;
+    int saved_errno = errno;
     int status;
     pid_t pid;
 
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        printf("[ REAPER ] Reaped process PID %d\n", pid);
-    }
-}
+        char buf[64];
+        int len = snprintf(buf, sizeof(buf), "[ REAPER ] Reaped process PID %d\n", pid);
+        if (len > 0) write(STDOUT_FILENO, buf, len);
 
+        handle_process_exit(pid, status);
+    }
+
+    errno = saved_errno;
+}
 static void sigterm_handler(int sig) {
     printf("[ INIT ] Received signal %d (%s) - initiating poweroff sequence...\n", 
            sig, sig == SIGTERM ? "SIGTERM" : "SIGPWR");

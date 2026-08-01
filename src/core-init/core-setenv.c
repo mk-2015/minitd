@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include <minit/api.h>
+#include <minit/configreader.h>
 
 #ifndef MAX_CHARS_HOSTNAME
 #define MAX_CHARS_HOSTNAME 64
@@ -21,16 +22,6 @@ const EnvironVar environ_default_table[] = {
 
 const size_t environ_default_table_size = sizeof(environ_default_table) / sizeof(environ_default_table[0]);
 
-static char *trim_whitespace(char *str) {
-    char *end;
-    while (isspace((unsigned char)*str)) str++;
-    if (*str == 0) return str;
-    end = str + strlen(str) - 1;
-    while (end > str && isspace((unsigned char)*end)) end--;
-    end[1] = '\0';
-    return str;
-}
-
 void _setenv_all(void)
 {
     for (size_t i = 0; i < environ_default_table_size; i++) {
@@ -41,39 +32,24 @@ void _setenv_all(void)
         }
     }
 
-    FILE *fp = fopen("/etc/minitd/environ", "r");
-    if (!fp) {
-        printf("[ INFO ] /etc/minitd/environ not found, keeping defaults.\n");
-        return;
+    MiConfig *config = open_config("/etc/minitd/environ");
+    if (!config) return;
+
+    char **keys = list_keys(config);
+    if (keys) {
+        for (size_t i = 0; keys[i] != NULL; i++) {
+            char *val = readkey(config, keys[i]);
+            if (val) {
+                if (setenv(keys[i], val, 1) == 0) {
+                    printf("[ OK ] Set environment config variable: %s\n", keys[i]);
+                }
+                free(val);
+            }
+        }
+        free_key_list(keys);
     }
 
-    char line[MAX_ENV_LINE_BUF];
-    char key[MAX_CHARS_ENVNAME + 1];
-    char val[MAX_CHARS_ENVCONTENT + 1];
-
-    while (fgets(line, sizeof(line), fp)) {
-        char *trimmed = trim_whitespace(line);
-
-        if (trimmed[0] == '\0' || trimmed[0] == '#') {
-            continue;
-        }
-        char *eq = strchr(trimmed, '=');
-        if (!eq) continue;
-
-        *eq = '\0';
-        char *raw_key = trim_whitespace(trimmed);
-        char *raw_val = trim_whitespace(eq + 1);
-
-        snprintf(key, sizeof(key), "%s", raw_key);
-        snprintf(val, sizeof(val), "%s", raw_val);
-
-        if (key[0] != '\0') {
-            setenv(key, val, 1);
-            printf("[ OK ] Set environment config varible: %s\n", key);
-        }
-    }
-
-    fclose(fp);
+    close_config(config);
 }
 
 void _setenv_early(void)

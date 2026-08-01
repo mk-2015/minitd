@@ -1,0 +1,3 @@
+/home/non-nine/dev/minitd/build/CMakeFiles/init.dir
+/home/non-nine/dev/minitd/build/CMakeFiles/edit_cache.dir
+/home/non-nine/dev/minitd/build/CMakeFiles/rebuild_cache.dir

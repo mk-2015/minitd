@@ -12,5 +12,6 @@ qemu-system-x86_64 \
     -kernel /boot/vmlinuz-6.18-x86_64 \
     -initrd initramfs.cpio.gz \
     -append "console=ttyS0 panic=1" \
+    -drive file=base/ramfile.img,index=1,media=disk,format=raw,if=virtio \
     -nographic
 

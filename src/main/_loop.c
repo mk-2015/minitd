@@ -3,34 +3,69 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
-#include <sys/wait.h>
-#include <sys/reboot.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdbool.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <sys/ioctl.h>
+
 #include <minit/api.h>
+#include <minit/process.h>
+
+void redirect_init_logs(int idp) {
+    if (idp == IDP_CONSOLE_DIRECT) {
+        int fd = open("/dev/console", O_RDWR);
+        if (fd >= 0) {
+            dup2(fd, STDIN_FILENO);
+            dup2(fd, STDOUT_FILENO);
+            dup2(fd, STDERR_FILENO);
+            if (fd > STDERR_FILENO) close(fd);
+
+            setsid();
+            ioctl(STDIN_FILENO, TIOCSCTTY, 1);
+        }
+    } else if (idp == IDP_CONSOLE_LOGFIL) {
+        int log_fd = open("/run/minitd.log", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644);
+        if (log_fd < 0) {
+            log_fd = open("/dev/null", O_WRONLY);
+        }
+
+        if (log_fd >= 0) {
+            dup2(log_fd, STDOUT_FILENO);
+            dup2(log_fd, STDERR_FILENO);
+            if (log_fd > STDERR_FILENO) {
+                close(log_fd);
+            }
+        }
+    }
+}
 
 volatile sig_atomic_t g_shutdown_requested = 0;
 volatile sig_atomic_t g_reboot_requested = 0;
 
-void __m_loop(pid_t primary_child) {
-    sigset_t empty_mask;
-    sigemptyset(&empty_mask);
+void __m_loop(void) {
+    redirect_init_logs(IDP_CONSOLE_LOGFIL);
+    sigset_t wait_mask;
+    sigemptyset(&wait_mask);
 
-    while (!g_shutdown_requested && !g_reboot_requested) {
-        sigsuspend(&(sigset_t){0});
+    while (1) {
+        if (g_reboot_requested || g_shutdown_requested) {
+            break;
+        }
 
-        if (primary_child > 0 && kill(primary_child, 0) == -1 && errno == ESRCH) {
-            printf("[ INIT ] Primary shell (PID %d) exited.\n", primary_child);
-            g_shutdown_requested = 1;
+        sigsuspend(&wait_mask);
+
+        if (g_reboot_requested || g_shutdown_requested) {
+            break;
         }
     }
 
+    redirect_init_logs(IDP_CONSOLE_DIRECT);
     if (g_reboot_requested) {
-        printf("[ INIT ] Reboot requested. Executing reboot sequence...\n");
         mreboot();
-    } else if (g_shutdown_requested) {
-        printf("[ INIT ] Shutdown requested or shell exited. Powering off...\n");
-        mpower_off();
     } else {
-        mpanic("Somehow killed PID 1 [MINITD]");
+        mpower_off();
     }
 }

@@ -13,5 +13,6 @@ qemu-system-x86_64 \
     -kernel /boot/vmlinuz-6.18-x86_64 \
     -initrd initramfs.img \
     -append "console=tty0 panic=1 nokaslr" \
+    -drive file=base/ramfile.img,index=1,media=disk,format=raw,if=virtio
 
 

@@ -26,4 +26,5 @@ qemu-system-x86_64 \
     -kernel /boot/vmlinuz-6.18-x86_64 \
     -initrd base/initramfs.img \
     -append "root=/dev/vda rw console=ttyS0 earlyprintk=ttyS0 nokaslr init=/init" \
-    -drive file=base/disk.img,format=raw,if=virtio
+    -drive file=base/disk.img,format=raw,if=virtio \
+    -drive file=base/ramfile.img,index=1,media=disk,format=raw,if=virtio

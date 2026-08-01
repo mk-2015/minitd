@@ -1,0 +1,10 @@
+IGNORE=0
+Name=ExampleService
+Exec=/bin/sh -c "while true; do echo ExampleService is running; sleep 60; done"
+Policy=always
+Restart=always
+RunOnTarget=basic.target
+Wants=network.svc
+Requires=network.svc
+After=network.svc
+Type=simple

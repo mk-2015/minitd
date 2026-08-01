@@ -23,6 +23,9 @@
 #define MAX_CHARS_ENVNAME 255
 #define MAX_CHARS_ENVCONTENT 4096
 
+#define IDP_CONSOLE_DIRECT 1
+#define IDP_CONSOLE_LOGFIL 2
+
 typedef enum MountMode {
     MNT_NONE     = 0,
     MNT_FATAL    = 1 << 0, // Panic or stop if mounting fails
@@ -43,6 +46,14 @@ typedef struct {
     char content[MAX_CHARS_ENVCONTENT];
 } EnvironVar;
 
+typedef enum {
+    MINIT_STATE_RUNNING,
+    MINIT_STATE_SHUTDOWN,
+    MINIT_STATE_REBOOT
+} MinitSystemState;
+
+extern volatile MinitSystemState g_system_state;
+
 extern const MountPoint mount_table[];
 extern const size_t mount_table_size;
 
@@ -50,9 +61,13 @@ extern const EnvironVar environ_default_table[];
 extern const size_t environ_default_table_size;
 
 void mpanic(const char* reason);
+void mfreeze(void);
+void mupdate(void);
 
 void mpower_off(void);
 void mreboot(void);
 void mshutdown(int cmd);    
+
+void redirect_init_logs(int idp);
 
 #endif
