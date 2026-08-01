@@ -5,3 +5,4 @@ bin/
 disk.img
 initramfs.cpio.gz
 initramfs.img
+build/
