@@ -26,6 +26,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/init.dir/src/main/config.c.o.d"
   "CMakeFiles/init.dir/src/main/process.c.o"
   "CMakeFiles/init.dir/src/main/process.c.o.d"
+  "CMakeFiles/init.dir/src/main/success_post.c.o"
+  "CMakeFiles/init.dir/src/main/success_post.c.o.d"
   "CMakeFiles/init.dir/src/mpanic.c.o"
   "CMakeFiles/init.dir/src/mpanic.c.o.d"
   "CMakeFiles/init.dir/src/mpower.c.o"

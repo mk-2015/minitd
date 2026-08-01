@@ -163,12 +163,6 @@ int main(int argc, char *argv[]) {
 
     printf("[ OK ] minitd started successfully!\n\n");
 
-    char *shell_args[] = { "/bin/sh", NULL };
-    ProcessNode *sh = process_create("primary-shell", "/bin/sh", shell_args, PROCESS_ONCE, 1);
-    if (sh) {
-        process_spawn(sh);
-    }
-
     __m_loop();
 
     mpower_off();

@@ -3,6 +3,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <termios.h>
+#include <errno.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
 #include <minit/process.h>
 #include <minit/api.h>
 #include <minit/service.h>
@@ -30,6 +34,50 @@ static char **clone_argv(char *const argv[]) {
     }
     new_argv[count] = NULL;
     return new_argv;
+}
+
+int new_tty(const char *path)
+{
+    if (!path) path = "/dev/console";
+
+    int fd = open(path, O_RDWR);
+    if (fd < 0) {
+        perror("[ FAIL ] new_tty: open failed");
+        return -1;
+    }
+
+    if (dup2(fd, STDIN_FILENO) < 0 ||
+        dup2(fd, STDOUT_FILENO) < 0 ||
+        dup2(fd, STDERR_FILENO) < 0) {
+        perror("[ FAIL ] new_tty: dup2 failed");
+        if (fd > STDERR_FILENO) close(fd);
+        return -1;
+    }
+
+    if (fd > STDERR_FILENO) close(fd);
+
+    if (setsid() < 0 && errno != EPERM) {
+        perror("[ WARN ] new_tty: setsid failed");
+    }
+
+    if (ioctl(STDIN_FILENO, TIOCSCTTY, 1) < 0) {
+        perror("[ WARN ] new_tty: TIOCSCTTY failed");
+    }
+
+    struct termios tio;
+    if (tcgetattr(STDIN_FILENO, &tio) == 0) {
+        tio.c_lflag |= (ICANON | ECHO | ECHOE | ECHOK | ISIG);
+        tio.c_iflag |= ICRNL;
+        tio.c_iflag &= ~IXOFF;
+        tio.c_oflag |= (OPOST | ONLCR);
+        if (tcsetattr(STDIN_FILENO, TCSANOW, &tio) < 0) {
+            perror("[ WARN ] new_tty: tcsetattr failed");
+        }
+    } else {
+        perror("[ WARN ] new_tty: tcgetattr failed");
+    }
+
+    return 0;
 }
 
 /* Helper to free argv */
@@ -188,9 +236,6 @@ void handle_process_exit(pid_t pid, int status) {
         case PROCESS_ALWAYS: {
             int should_restart = 1;
             int exit_code = WEXITSTATUS(status);
-            if (WIFEXITED(status) && exit_code == 0) {
-                should_restart = 0;
-            }
 
             ServiceIndex *svc = NULL;
             for (size_t i = 0; i < ServiceTableCount; i++) {
@@ -200,10 +245,12 @@ void handle_process_exit(pid_t pid, int status) {
                 }
             }
 
-            if (svc && svc->restart == RESTART_NO) {
-                should_restart = 0;
-            } else if (svc && svc->restart == RESTART_ON_FAILURE) {
-                should_restart = !(WIFEXITED(status) && exit_code == 0);
+            if (svc) {
+                if (svc->restart == RESTART_NO) {
+                    should_restart = 0;
+                } else if (svc->restart == RESTART_ON_FAILURE) {
+                    should_restart = !(WIFEXITED(status) && exit_code == 0);
+                }
             }
 
             if (should_restart) {

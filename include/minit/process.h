@@ -37,4 +37,6 @@ int process_has_had_primaries(void);
 
 void handle_process_exit(pid_t pid, int status);
 
+int new_tty(const char *path);
+
 #endif /* MINIT_PROCESS_H */

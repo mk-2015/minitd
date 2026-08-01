@@ -64,19 +64,41 @@ CMAKE_BINARY_DIR = /home/non-nine/dev/minitd/build
 
 # The main recursive "all" target.
 all: CMakeFiles/init.dir/all
+all: libs/all
 .PHONY : all
 
 # The main recursive "codegen" target.
 codegen: CMakeFiles/init.dir/codegen
+codegen: libs/codegen
 .PHONY : codegen
 
 # The main recursive "preinstall" target.
-preinstall:
+preinstall: libs/preinstall
 .PHONY : preinstall
 
 # The main recursive "clean" target.
 clean: CMakeFiles/init.dir/clean
+clean: libs/clean
 .PHONY : clean
+
+#=============================================================================
+# Directory level rules for directory libs
+
+# Recursive "all" directory target.
+libs/all:
+.PHONY : libs/all
+
+# Recursive "codegen" directory target.
+libs/codegen:
+.PHONY : libs/codegen
+
+# Recursive "preinstall" directory target.
+libs/preinstall:
+.PHONY : libs/preinstall
+
+# Recursive "clean" directory target.
+libs/clean:
+.PHONY : libs/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/init.dir
@@ -85,12 +107,12 @@ clean: CMakeFiles/init.dir/clean
 CMakeFiles/init.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/init.dir/build.make CMakeFiles/init.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/init.dir/build.make CMakeFiles/init.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/non-nine/dev/minitd/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 "Built target init"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/non-nine/dev/minitd/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 "Built target init"
 .PHONY : CMakeFiles/init.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/init.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/non-nine/dev/minitd/build/CMakeFiles 15
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/non-nine/dev/minitd/build/CMakeFiles 16
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/init.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/non-nine/dev/minitd/build/CMakeFiles 0
 .PHONY : CMakeFiles/init.dir/rule
@@ -102,7 +124,7 @@ init: CMakeFiles/init.dir/rule
 # codegen rule for target.
 CMakeFiles/init.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/init.dir/build.make CMakeFiles/init.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/non-nine/dev/minitd/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 "Finished codegen for target init"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/non-nine/dev/minitd/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 "Finished codegen for target init"
 .PHONY : CMakeFiles/init.dir/codegen
 
 # clean rule for target.

@@ -417,6 +417,30 @@ src/main/process.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/init.dir/build.make CMakeFiles/init.dir/src/main/process.c.s
 .PHONY : src/main/process.c.s
 
+src/main/success_post.o: src/main/success_post.c.o
+.PHONY : src/main/success_post.o
+
+# target to build an object file
+src/main/success_post.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/init.dir/build.make CMakeFiles/init.dir/src/main/success_post.c.o
+.PHONY : src/main/success_post.c.o
+
+src/main/success_post.i: src/main/success_post.c.i
+.PHONY : src/main/success_post.i
+
+# target to preprocess a source file
+src/main/success_post.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/init.dir/build.make CMakeFiles/init.dir/src/main/success_post.c.i
+.PHONY : src/main/success_post.c.i
+
+src/main/success_post.s: src/main/success_post.c.s
+.PHONY : src/main/success_post.s
+
+# target to generate assembly for a file
+src/main/success_post.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/init.dir/build.make CMakeFiles/init.dir/src/main/success_post.c.s
+.PHONY : src/main/success_post.c.s
+
 src/mpanic.o: src/mpanic.c.o
 .PHONY : src/mpanic.o
 
@@ -510,6 +534,9 @@ help:
 	@echo "... src/main/process.o"
 	@echo "... src/main/process.i"
 	@echo "... src/main/process.s"
+	@echo "... src/main/success_post.o"
+	@echo "... src/main/success_post.i"
+	@echo "... src/main/success_post.s"
 	@echo "... src/mpanic.o"
 	@echo "... src/mpanic.i"
 	@echo "... src/mpanic.s"

@@ -88,6 +88,25 @@ Runtime behavior:
 - `OptFile=<target filename or Name>` selects the preferred starting target.
 - `IGNORE=1` disables maxtarg constraints.
 
+Example section syntax in MiLang:
+```ini
+RootVar=1
+RootVar2=Root
+
+[MySection]
+MySectionVar=123
+```
+
+New configreader helpers support:
+- `readkey(cfg, "RootVar")`
+- `readkey(cfg, "MySection.MySectionVar")`
+- `writekey(cfg, "MySection.MySectionVar", "456")`
+- `deletekey(cfg, "MySection.MySectionVar")`
+- `list_sections(cfg)`
+- `list_keys_in_section(cfg, "MySection")`
+- `list_num_key_in_section(cfg, "MySection")`
+- `list_num_sections(cfg)`
+
 ## Test
 - As mentioned in "Prebuilt shell utilities" there are multple shell utilities for with/out graphics and/or disk.img (/dev/vda)
 
@@ -98,7 +117,7 @@ Runtime behavior:
 ```bash
 git clone https://github.com/mk-2015/minitd.git
 rm -rf .git
-```
+``` 
 
 - Make the image file:
 ```bash

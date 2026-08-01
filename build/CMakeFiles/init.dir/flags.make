@@ -4,7 +4,7 @@
 # compile C with /usr/bin/gcc
 C_DEFINES = 
 
-C_INCLUDES = -I/home/non-nine/dev/minitd/include
+C_INCLUDES = -I/home/non-nine/dev/minitd/include -I/home/non-nine/dev/minitd/libs/include
 
 C_FLAGS = -g -std=gnu11 -Wall -Wextra -O2
 

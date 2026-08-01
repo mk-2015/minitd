@@ -240,10 +240,24 @@ CMakeFiles/init.dir/src/main/process.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/init.dir/src/main/process.c.s"
 	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/non-nine/dev/minitd/src/main/process.c -o CMakeFiles/init.dir/src/main/process.c.s
 
+CMakeFiles/init.dir/src/main/success_post.c.o: CMakeFiles/init.dir/flags.make
+CMakeFiles/init.dir/src/main/success_post.c.o: /home/non-nine/dev/minitd/src/main/success_post.c
+CMakeFiles/init.dir/src/main/success_post.c.o: CMakeFiles/init.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/non-nine/dev/minitd/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building C object CMakeFiles/init.dir/src/main/success_post.c.o"
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/init.dir/src/main/success_post.c.o -MF CMakeFiles/init.dir/src/main/success_post.c.o.d -o CMakeFiles/init.dir/src/main/success_post.c.o -c /home/non-nine/dev/minitd/src/main/success_post.c
+
+CMakeFiles/init.dir/src/main/success_post.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/init.dir/src/main/success_post.c.i"
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/non-nine/dev/minitd/src/main/success_post.c > CMakeFiles/init.dir/src/main/success_post.c.i
+
+CMakeFiles/init.dir/src/main/success_post.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/init.dir/src/main/success_post.c.s"
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/non-nine/dev/minitd/src/main/success_post.c -o CMakeFiles/init.dir/src/main/success_post.c.s
+
 CMakeFiles/init.dir/src/mpanic.c.o: CMakeFiles/init.dir/flags.make
 CMakeFiles/init.dir/src/mpanic.c.o: /home/non-nine/dev/minitd/src/mpanic.c
 CMakeFiles/init.dir/src/mpanic.c.o: CMakeFiles/init.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/non-nine/dev/minitd/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building C object CMakeFiles/init.dir/src/mpanic.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/non-nine/dev/minitd/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building C object CMakeFiles/init.dir/src/mpanic.c.o"
 	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/init.dir/src/mpanic.c.o -MF CMakeFiles/init.dir/src/mpanic.c.o.d -o CMakeFiles/init.dir/src/mpanic.c.o -c /home/non-nine/dev/minitd/src/mpanic.c
 
 CMakeFiles/init.dir/src/mpanic.c.i: cmake_force
@@ -257,7 +271,7 @@ CMakeFiles/init.dir/src/mpanic.c.s: cmake_force
 CMakeFiles/init.dir/src/mpower.c.o: CMakeFiles/init.dir/flags.make
 CMakeFiles/init.dir/src/mpower.c.o: /home/non-nine/dev/minitd/src/mpower.c
 CMakeFiles/init.dir/src/mpower.c.o: CMakeFiles/init.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/non-nine/dev/minitd/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building C object CMakeFiles/init.dir/src/mpower.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/non-nine/dev/minitd/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building C object CMakeFiles/init.dir/src/mpower.c.o"
 	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/init.dir/src/mpower.c.o -MF CMakeFiles/init.dir/src/mpower.c.o.d -o CMakeFiles/init.dir/src/mpower.c.o -c /home/non-nine/dev/minitd/src/mpower.c
 
 CMakeFiles/init.dir/src/mpower.c.i: cmake_force
@@ -282,6 +296,7 @@ init_OBJECTS = \
 "CMakeFiles/init.dir/src/main/_loop.c.o" \
 "CMakeFiles/init.dir/src/main/config.c.o" \
 "CMakeFiles/init.dir/src/main/process.c.o" \
+"CMakeFiles/init.dir/src/main/success_post.c.o" \
 "CMakeFiles/init.dir/src/mpanic.c.o" \
 "CMakeFiles/init.dir/src/mpower.c.o"
 
@@ -300,12 +315,13 @@ init_EXTERNAL_OBJECTS =
 /home/non-nine/dev/minitd/bin/init: CMakeFiles/init.dir/src/main/_loop.c.o
 /home/non-nine/dev/minitd/bin/init: CMakeFiles/init.dir/src/main/config.c.o
 /home/non-nine/dev/minitd/bin/init: CMakeFiles/init.dir/src/main/process.c.o
+/home/non-nine/dev/minitd/bin/init: CMakeFiles/init.dir/src/main/success_post.c.o
 /home/non-nine/dev/minitd/bin/init: CMakeFiles/init.dir/src/mpanic.c.o
 /home/non-nine/dev/minitd/bin/init: CMakeFiles/init.dir/src/mpower.c.o
 /home/non-nine/dev/minitd/bin/init: CMakeFiles/init.dir/build.make
 /home/non-nine/dev/minitd/bin/init: CMakeFiles/init.dir/compiler_depend.ts
 /home/non-nine/dev/minitd/bin/init: CMakeFiles/init.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/non-nine/dev/minitd/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Linking C executable /home/non-nine/dev/minitd/bin/init"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/non-nine/dev/minitd/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Linking C executable /home/non-nine/dev/minitd/bin/init"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/init.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

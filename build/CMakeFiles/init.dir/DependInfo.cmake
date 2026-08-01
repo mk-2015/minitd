@@ -20,6 +20,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/non-nine/dev/minitd/src/main/_loop.c" "CMakeFiles/init.dir/src/main/_loop.c.o" "gcc" "CMakeFiles/init.dir/src/main/_loop.c.o.d"
   "/home/non-nine/dev/minitd/src/main/config.c" "CMakeFiles/init.dir/src/main/config.c.o" "gcc" "CMakeFiles/init.dir/src/main/config.c.o.d"
   "/home/non-nine/dev/minitd/src/main/process.c" "CMakeFiles/init.dir/src/main/process.c.o" "gcc" "CMakeFiles/init.dir/src/main/process.c.o.d"
+  "/home/non-nine/dev/minitd/src/main/success_post.c" "CMakeFiles/init.dir/src/main/success_post.c.o" "gcc" "CMakeFiles/init.dir/src/main/success_post.c.o.d"
   "/home/non-nine/dev/minitd/src/mpanic.c" "CMakeFiles/init.dir/src/mpanic.c.o" "gcc" "CMakeFiles/init.dir/src/mpanic.c.o.d"
   "/home/non-nine/dev/minitd/src/mpower.c" "CMakeFiles/init.dir/src/mpower.c.o" "gcc" "CMakeFiles/init.dir/src/mpower.c.o.d"
   "" "/home/non-nine/dev/minitd/bin/init" "gcc" "CMakeFiles/init.dir/link.d"

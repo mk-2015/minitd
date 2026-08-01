@@ -14,6 +14,8 @@
 #include <minit/api.h>
 #include <minit/process.h>
 
+extern int __post_success(void);
+
 void redirect_init_logs(int idp) {
     if (idp == IDP_CONSOLE_DIRECT) {
         int fd = open("/dev/console", O_RDWR);
@@ -49,6 +51,12 @@ void __m_loop(void) {
     redirect_init_logs(IDP_CONSOLE_LOGFIL);
     sigset_t wait_mask;
     sigemptyset(&wait_mask);
+
+    if (__post_success() != 0) {
+        redirect_init_logs(IDP_CONSOLE_DIRECT);
+        fprintf(stderr, "[ FAIL ] Failed to run post-success initialization\n");
+        mpanic("Post-success initialization failed");
+    }
 
     while (1) {
         if (g_reboot_requested || g_shutdown_requested) {

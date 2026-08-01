@@ -1,5 +1,5 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -O2 -Iinclude -static
+CC      = gcc
+CFLAGS  = -Wall -Wextra -O2 -Iinclude -Ilibs/include -static
 LDFLAGS = -static
 
 SRC_DIR = src
@@ -7,11 +7,20 @@ INC_DIR = include
 BIN_DIR = bin
 OBJ_DIR = obj
 
-SRCS = $(shell find $(SRC_DIR) -type f -name '*.c')
-OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
+LIBS_DIR    = libs
+LIB_OUT_DIR = $(LIBS_DIR)/lib
+
+SRCS   = $(shell find $(SRC_DIR) -type f -name '*.c')
+OBJS   = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
 TARGET = $(BIN_DIR)/init
 
-all: $(BIN_DIR) $(OBJ_DIR) $(TARGET)
+LIB_NAMES := $(notdir $(wildcard $(LIBS_DIR)/src/*))
+
+LDFLAGS += -L$(LIB_OUT_DIR) $(patsubst %,-l:%.a,$(LIB_NAMES))
+
+all: libs $(BIN_DIR) $(OBJ_DIR) $(TARGET)
+libs:
+	$(MAKE) -C $(LIBS_DIR) static
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
@@ -19,7 +28,7 @@ $(BIN_DIR):
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 
-$(TARGET): $(OBJS)
+$(TARGET): $(OBJS) libs
 	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
@@ -28,6 +37,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
+	$(MAKE) -C $(LIBS_DIR) clean
 
 prepmkinit:
 	@sudo mkinitcpio -c ./base/minit-mkinitcpio.conf -g ./base/initramfs.img -k $(shell uname -r)
@@ -42,4 +52,4 @@ prepmkinit:
 	@sudo cp -a ./base/rootfs/init /tmp/_root/sbin/init
 	@sudo umount /tmp/_root
 
-.PHONY: all clean prepmkinit
+.PHONY: all clean prepmkinit libs

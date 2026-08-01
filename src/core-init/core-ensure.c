@@ -61,7 +61,7 @@ void __etc_init(void)
     if (fp != NULL) {
         fprintf(fp, "Name=ServiceTarget\n");
         fprintf(fp, "Level=2\n");
-        fprintf(fp, "Next=graphical.target\n");
+        fprintf(fp, "Next=\n");
         fclose(fp);
     } else {
         perror("[ FAIL ] Could not open /etc/minitd/targetfiles");
@@ -69,14 +69,24 @@ void __etc_init(void)
 
     fp = fopen("/etc/minitd/targetfiles/maxtarg.conf", "w");
     if (fp != NULL) {
-        fprintf(fp, "LEVEL=3\n");
-        fprintf(fp, "OptFile=graphic.target\n");
+        fprintf(fp, "LEVEL=2\n");
+        fprintf(fp, "OptFile=service.target\n");
         fprintf(fp, "IGNORE=0\n");
         fclose(fp);
     } else {
         perror("[ FAIL ] Could not open /etc/minitd/targetfiles/maxtarg.conf");
     }
 
+    fp = fopen("/etc/minitd/startexec.conf", "w");
+    if (fp != NULL) {
+        fprintf(fp, "[Shell]\n");
+        fprintf(fp, "Exec=/bin/sh\n");
+        fprintf(fp, "Policy=always\n");
+        fprintf(fp, "Name=Shell\n");
+        fclose(fp);
+    } else {
+        perror("[ FAIL ] Could not open /etc/minitd/startexec.conf");
+    }
 }
 
 /*
