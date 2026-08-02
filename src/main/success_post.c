@@ -2,6 +2,7 @@
 #include <minit/service.h>
 #include <minit/process.h>
 #include <minit/api.h>
+#include <libubookd/booker.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +14,8 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <stdbool.h>
+
+extern Book* g_Book;
 
 static void free_string_array(char **items)
 {
@@ -129,13 +132,13 @@ int __post_success(void)
 {
     MiConfig *cfg = open_config("/etc/minitd/startexec.conf");
     if (!cfg) {
-        printf("[ WARN ] /etc/minitd/startexec.conf not found. Spawning default shell.\n");
+        BookWriteLog(g_Book, "/etc/minitd/startexec.conf not found. Spawning default shell.", LOG_LEVEL_WARNING);
         return spawn_default_shell();
     }
 
     char **sections = list_sections(cfg);
     if (!sections) {
-        printf("[ WARN ] No sections in startexec.conf. Spawning default shell.\n");
+        BookWriteLog(g_Book, "No sections in startexec.conf. Spawning default shell.", LOG_LEVEL_WARNING);
         close_config(cfg);
         return spawn_default_shell();
     }
@@ -175,7 +178,7 @@ int __post_success(void)
         char *binary_path = NULL;
         char **argv = parse_exec_args(exec_cmd, &binary_path);
         if (!argv || !binary_path) {
-            fprintf(stderr, "[ FAIL ] Failed to parse exec command for section [%s]\n", section);
+            BookWriteLog(g_Book, "Failed to parse exec command for section [%s]", LOG_LEVEL_ERROR, section);
             free(exec_cmd);
             free(policy);
             free(name);
@@ -187,17 +190,19 @@ int __post_success(void)
         found_exec = true;
 
 
-        printf("[ INFO ] Section=[%s] Name=%s Policy=%s Binary=%s Argv0=%s\n",
-               section, name, policy, binary_path, argv[0] ? argv[0] : "(null)");
-        
+        BookWriteLog(g_Book, "Spawning process for section [%s]: %s", LOG_LEVEL_INFO, section, exec_cmd);
+
         if(new_tty(NULL) == -1) {
+            BookWriteLog(g_Book, "Failed to create new TTY for section [%s]", LOG_LEVEL_WARNING, section);
             fprintf(stderr, "[ WARN ] Failed to create new TTY for section [%s]\n", section);
         }
         ProcessNode *process = process_create(name, binary_path, argv, ptype, 0);
         if (!process) {
+            BookWriteLog(g_Book, "Failed to create process node for section [%s]", LOG_LEVEL_ERROR, section);
             fprintf(stderr, "[ FAIL ] Failed to create process node for %s\n", name);
         } else if (process_spawn(process) != 0) {
-            fprintf(stderr, "[ FAIL ] Failed to spawn process %s\n", name);
+            BookWriteLog(g_Book, "Failed to spawn process for section [%s]", LOG_LEVEL_ERROR, section);
+            fprintf(stderr, "[ FAIL ] Failed to spawn process for %s\n", name);
         }
 
         free(exec_cmd);
@@ -212,6 +217,7 @@ int __post_success(void)
 
     /* Fallback if no valid Exec keys were executed */
     if (!found_exec) {
+        BookWriteLog(g_Book, "No valid Exec keys executed from startexec.conf. Spawning fallback shell.", LOG_LEVEL_WARNING);
         printf("[ WARN ] No valid Exec keys executed from startexec.conf. Spawning fallback shell.\n");
         return spawn_default_shell();
     }

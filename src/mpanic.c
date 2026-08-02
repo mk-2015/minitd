@@ -4,15 +4,35 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <minit/api.h>
+#include <stdarg.h>
 
-void mpanic(const char* reason)
+#include <libubookd/booker.h>
+
+extern Book* g_Book;
+
+void mvpanic(const char *reason, va_list args)
 {
-    fprintf(stderr, "\n[ FATAL ] %s\n", reason ? reason : "Unknown error");
+    char log_buf[1024];
+    const char *fmt = reason ? reason : "Unknown panic error";
+
+    vsnprintf(log_buf, sizeof(log_buf), fmt, args);
+
+    fprintf(stderr, "\n[ FATAL ] %s\n", log_buf);
     fflush(stderr);
-    if(g_Book && g_Book->inited) {
-        BookWriteLog(g_Book, reason ? reason : "Unknown error", LOG_LEVEL_CRITICAL);
+
+    if (g_Book && g_Book->inited) {
+        BookWriteLog(g_Book, log_buf, LOG_LEVEL_CRITICAL);
     }
+
     exit(1);
+}
+
+void mpanic(const char *reason, ...)
+{
+    va_list args;
+    va_start(args, reason);
+    mvpanic(reason, args);
+    va_end(args);
 }
 
 void mfreeze(void)

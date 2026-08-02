@@ -48,12 +48,23 @@ static char **clone_argv(char *const argv[]) {
 
 int new_tty(const char *path)
 {
+    if (setsid() < 0 && errno != EPERM) {
+        perror("[ WARN ] new_tty: setsid failed");
+    }
+
     if (!path) path = "/dev/console";
 
     int fd = open(path, O_RDWR);
     if (fd < 0) {
-        perror("[ FAIL ] new_tty: open failed");
-        return -1;
+        fd = open("/dev/tty1", O_RDWR);
+        if (fd < 0) {
+            perror("[ FAIL ] new_tty: open failed");
+            return -1;
+        }
+    }
+
+    if (ioctl(fd, TIOCSCTTY, 1) < 0) {
+        perror("[ WARN ] new_tty: TIOCSCTTY failed");
     }
 
     if (dup2(fd, STDIN_FILENO) < 0 ||
@@ -65,14 +76,6 @@ int new_tty(const char *path)
     }
 
     if (fd > STDERR_FILENO) close(fd);
-
-    if (setsid() < 0 && errno != EPERM) {
-        perror("[ WARN ] new_tty: setsid failed");
-    }
-
-    if (ioctl(STDIN_FILENO, TIOCSCTTY, 1) < 0) {
-        perror("[ WARN ] new_tty: TIOCSCTTY failed");
-    }
 
     struct termios tio;
     if (tcgetattr(STDIN_FILENO, &tio) == 0) {
@@ -86,6 +89,8 @@ int new_tty(const char *path)
     } else {
         perror("[ WARN ] new_tty: tcgetattr failed");
     }
+
+    tcsetpgrp(STDIN_FILENO, getpid());
 
     return 0;
 }

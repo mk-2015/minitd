@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mount.h>
@@ -13,6 +14,8 @@
 // internal
 #include <minit/api.h>
 #include <minit/process.h>
+
+struct timespec start, end;
 
 extern void __m_loop(void);
 extern void _early_core(const char* params);
@@ -139,6 +142,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: Must run as PID 1.\n");
         return 1;
     }
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
     mount_setup();
 

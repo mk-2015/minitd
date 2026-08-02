@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 #include <libubookd/booker.h>
 
@@ -31,8 +32,8 @@ int OpenBook(char* path, BookState state, Book* book) {
 }
 
 /* Write a log entry to the Book file */
-int BookWriteLog(Book* book, const char* log, LogLevel level) {
-    if (!book || !book->inited || !log) {
+int BookWriteLog(Book* book, const char* format, LogLevel level, ...) {
+    if (!book || !book->inited || !format) {
         return -1;
     }
 
@@ -52,8 +53,19 @@ int BookWriteLog(Book* book, const char* log, LogLevel level) {
         strcpy(logvl, "[UNKNOWN] ");
     }
     
-    size_t bytes_written = fprintf(book->fp, "%s%s", logvl, log);
-    if (bytes_written != strlen(logvl) + strlen(log)) {
+    /* Format the log message with variadic arguments */
+    char formatted[4096];
+    va_list args;
+    va_start(args, level);
+    int n = vsnprintf(formatted, sizeof(formatted), format, args);
+    va_end(args);
+    
+    if (n < 0 || n >= (int)sizeof(formatted)) {
+        return -1;
+    }
+    
+    size_t bytes_written = fprintf(book->fp, "%s%s", logvl, formatted);
+    if (bytes_written != strlen(logvl) + strlen(formatted)) {
         return -1;
     }
 

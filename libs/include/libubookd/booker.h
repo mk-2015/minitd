@@ -25,7 +25,7 @@ typedef struct {
 } Book;
 
 int OpenBook(char* path, BookState state, Book* book);
-int BookWriteLog(Book* book, const char* log, LogLevel level);
+int BookWriteLog(Book* book, const char* format, LogLevel level, ...);
 int BookReadLineRange(unsigned int start_line, unsigned int end_line, Book* book, char* buffer, size_t buffer_size);
 int BookReadLog(unsigned int line_number, Book* book, char* buffer, size_t buffer_size);
 int BookReadLastLog(Book* book, char* buffer, size_t buffer_size);

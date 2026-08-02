@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <time.h>
 #include <stdbool.h>
 #include <string.h>
 #include <sys/wait.h>
@@ -20,6 +21,8 @@ extern int __post_success(void);
 extern Book* g_Book;
 
 pthread_t tid;
+
+extern struct timespec start, end;
 
 void redirect_init_logs(int idp) {
     if (idp == IDP_CONSOLE_DIRECT) {
@@ -95,6 +98,26 @@ void __m_loop(void) {
         BookWriteLog(g_Book, "Failed to create power thread", LOG_LEVEL_CRITICAL);
         mpanic("Main power thread creation failed");
     }
+
+    redirect_init_logs(IDP_CONSOLE_DIRECT);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    long seconds = end.tv_sec - start.tv_sec;
+    long nanoseconds = end.tv_nsec - start.tv_nsec;
+
+    if (nanoseconds < 0) {
+        seconds -= 1;
+        nanoseconds += 1000000000L;
+    }
+
+    long total_ms = seconds * 1000 + nanoseconds / 1000000L;
+
+    long mm = total_ms / 60000;
+    long ss = (total_ms % 60000) / 1000;
+    long msms = total_ms % 1000;
+
+    printf("[ INFO ] minitd started in: %02ldm %02lds %03ldms\n", mm, ss, msms);
+    redirect_init_logs(IDP_CONSOLE_LOGFIL);
 
     while (1) {
         sigsuspend(&wait_mask);

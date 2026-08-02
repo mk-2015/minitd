@@ -17,6 +17,7 @@
 #include <minit/api.h>
 #include <minit/service.h>
 #include <libunotifi/unotifi.h>
+#include <libubookd/booker.h>
 
 #define SOCKET_PATH "/run/minitd/contrl.sock"
 #define MAX_EVENTS 16
@@ -28,6 +29,8 @@ static pthread_mutex_t g_service_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 extern volatile sig_atomic_t g_shutdown_requested;
 extern volatile sig_atomic_t g_reboot_requested;
+
+extern Book* g_Book;
 
 /* Quote-aware string tokenizer */
 static char *next_token(char **str) {
@@ -260,6 +263,11 @@ static void __proc_cmd_unotifi(int fd, const char *raw_buf) {
 /* Worker thread function */
 void *__unix_socket_minit(void *arg) {
     (void)arg;
+
+    while(!g_Book || !g_Book->inited) {
+        usleep(100000); // Spawned in another thread
+        // wont block execution, but we need to wait for the book to be initialized before we can log anything
+    }
 
     int server_fd = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
     if (server_fd < 0) {

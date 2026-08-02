@@ -29,3 +29,16 @@ qemu-system-x86_64 \
     -append "root=/dev/vda rw console=tty0 nokaslr init=/init" \
     -drive file=base/disk.img,format=raw,if=virtio \
     -drive file=base/ramfile.img,index=1,media=disk,format=raw,if=virtio
+
+# -netdev tap,id=net0,ifname=tap0,script=no,downscript=no \
+# -device virtio-net-pci,netdev=net0
+# 
+# qemu-system-x86_64 \
+#    -full-screen \
+#    -kernel /boot/vmlinuz-6.18-x86_64 \
+#    -initrd base/initramfs.img \
+#    -append "root=/dev/vda rw console=tty0 nokaslr init=/init" \
+#    -drive file=base/disk.img,format=raw,if=virtio \
+#    -drive file=base/ramfile.img,index=1,media=disk,format=raw,if=virtio \
+#    -netdev tap,id=net0,ifname=tap0,script=no,downscript=no \
+#    -device virtio-net-pci,netdev=net0
