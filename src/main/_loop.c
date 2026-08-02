@@ -10,11 +10,16 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <sys/ioctl.h>
+#include <pthread.h>
 
 #include <minit/api.h>
 #include <minit/process.h>
+#include <libubookd/booker.h>
 
 extern int __post_success(void);
+extern Book* g_Book;
+
+pthread_t tid;
 
 void redirect_init_logs(int idp) {
     if (idp == IDP_CONSOLE_DIRECT) {
@@ -29,16 +34,24 @@ void redirect_init_logs(int idp) {
             ioctl(STDIN_FILENO, TIOCSCTTY, 1);
         }
     } else if (idp == IDP_CONSOLE_LOGFIL) {
-        int log_fd = open("/run/minitd.log", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644);
-        if (log_fd < 0) {
-            log_fd = open("/dev/null", O_WRONLY);
-        }
+        if (g_Book && g_Book->inited) {
+            int log_fd = fileno(g_Book->fp);
+            if (log_fd >= 0) {
+                dup2(log_fd, STDOUT_FILENO);
+                dup2(log_fd, STDERR_FILENO);
+            }
+        } else {
+            int log_fd = open("/run/minitd.log", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644);
+            if (log_fd < 0) {
+                log_fd = open("/dev/null", O_WRONLY);
+            }
 
-        if (log_fd >= 0) {
-            dup2(log_fd, STDOUT_FILENO);
-            dup2(log_fd, STDERR_FILENO);
-            if (log_fd > STDERR_FILENO) {
-                close(log_fd);
+            if (log_fd >= 0) {
+                dup2(log_fd, STDOUT_FILENO);
+                dup2(log_fd, STDERR_FILENO);
+                if (log_fd > STDERR_FILENO) {
+                    close(log_fd);
+                }
             }
         }
     }
@@ -46,6 +59,23 @@ void redirect_init_logs(int idp) {
 
 volatile sig_atomic_t g_shutdown_requested = 0;
 volatile sig_atomic_t g_reboot_requested = 0;
+
+void __power(void) {
+    while (1) {
+        if (g_shutdown_requested) {
+            redirect_init_logs(IDP_CONSOLE_DIRECT);
+            fprintf(stderr, "[ INFO ] Shutdown requested\n");
+            BookWriteLog(g_Book, "Shutdown requested", LOG_LEVEL_INFO);
+            mpower_off();
+        } else if (g_reboot_requested) {
+            redirect_init_logs(IDP_CONSOLE_DIRECT);
+            fprintf(stderr, "[ INFO ] Reboot requested\n");
+            BookWriteLog(g_Book, "Reboot requested", LOG_LEVEL_INFO);
+            mreboot();
+        }
+        sleep(1);
+    }
+}
 
 void __m_loop(void) {
     redirect_init_logs(IDP_CONSOLE_LOGFIL);
@@ -55,25 +85,28 @@ void __m_loop(void) {
     if (__post_success() != 0) {
         redirect_init_logs(IDP_CONSOLE_DIRECT);
         fprintf(stderr, "[ FAIL ] Failed to run post-success initialization\n");
+        BookWriteLog(g_Book, "Failed to run post-success initialization", LOG_LEVEL_CRITICAL);
         mpanic("Post-success initialization failed");
     }
 
-    while (1) {
-        if (g_reboot_requested || g_shutdown_requested) {
-            break;
-        }
-
-        sigsuspend(&wait_mask);
-
-        if (g_reboot_requested || g_shutdown_requested) {
-            break;
-        }
+    if(pthread_create(&tid, NULL, (void*(*)(void*))__power, NULL) != 0) {
+        redirect_init_logs(IDP_CONSOLE_DIRECT);
+        fprintf(stderr, "[ FAIL ] Failed to create power thread\n");
+        BookWriteLog(g_Book, "Failed to create power thread", LOG_LEVEL_CRITICAL);
+        mpanic("Main power thread creation failed");
     }
 
+    while (1) {
+        sigsuspend(&wait_mask);
+    }
+
+    // never reach here, but if we do, ensure logs are redirected and handle shutdown/reboot
     redirect_init_logs(IDP_CONSOLE_DIRECT);
     if (g_reboot_requested) {
+        BookWriteLog(g_Book, "Reboot requested", LOG_LEVEL_INFO);
         mreboot();
     } else {
+        BookWriteLog(g_Book, "Shutdown requested", LOG_LEVEL_INFO);
         mpower_off();
     }
 }

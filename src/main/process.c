@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <termios.h>
+#include <time.h>
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
@@ -21,6 +22,15 @@ extern size_t ServiceTableCount;
 
 extern volatile sig_atomic_t g_shutdown_requested;
 extern volatile sig_atomic_t g_reboot_requested;
+
+typedef struct {
+    int status;
+    int crash_count_window;
+    time_t window_start_time;
+    pid_t pid;
+} ProcessClose;
+
+ProcessClose *procCCloseTable = NULL;
 
 /* Helper to clone argv arrays dynamically */
 static char **clone_argv(char *const argv[]) {
@@ -200,12 +210,40 @@ int process_remove(size_t id) {
 
 /* Dynamic lifecycle exit handler */
 void handle_process_exit(pid_t pid, int status) {
-    (void)status; /* Unused parameter warning suppression */
-
     ProcessNode *proc = process_find_by_pid(pid);
     if (!proc) return;
 
     proc->is_active = 0;
+
+    /* Maintain crash / close count table */
+    if (procCCloseTable == NULL) {
+        procCCloseTable = calloc(next_process_id + 64, sizeof(ProcessClose));
+    }
+
+    /* Fetch current monotonic time */
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    time_t now = ts.tv_sec;
+
+    size_t slot = proc->id;
+    procCCloseTable[slot].pid = pid;
+    procCCloseTable[slot].status = status;
+
+    /* Handle rate-limiting rolling window */
+    if (procCCloseTable[slot].window_start_time == 0) {
+        /* First exit tracking initialization */
+        procCCloseTable[slot].window_start_time = now;
+        procCCloseTable[slot].crash_count_window = 1;
+    } else if (now - procCCloseTable[slot].window_start_time <= 2) {
+        /* Exit happened within the 2-second rate-limit window */
+        procCCloseTable[slot].crash_count_window++;
+    } else {
+        /* More than 2 seconds have passed: reset the window */
+        procCCloseTable[slot].window_start_time = now;
+        procCCloseTable[slot].crash_count_window = 1;
+    }
+
+    int rapid_crashes = procCCloseTable[slot].crash_count_window;
 
     /* 1. Sync ServiceTable entry if this PID maps to a registered Service */
     for (size_t i = 0; i < ServiceTableCount; i++) {
@@ -237,6 +275,12 @@ void handle_process_exit(pid_t pid, int status) {
             int should_restart = 1;
             int exit_code = WEXITSTATUS(status);
 
+            /* Stop infinite crash loop if process exits >10 times in <=2s */
+            if (rapid_crashes > 10) {
+                printf("[ WARN ] Process '%s' (ID: %zu) respawned too quickly (>10 crashes in <2s). Abandoning.\n", proc->name, id);
+                should_restart = 0;
+            }
+
             ServiceIndex *svc = NULL;
             for (size_t i = 0; i < ServiceTableCount; i++) {
                 if (ServiceTable[i].proctable_id == id) {
@@ -245,7 +289,7 @@ void handle_process_exit(pid_t pid, int status) {
                 }
             }
 
-            if (svc) {
+            if (svc && should_restart) {
                 if (svc->restart == RESTART_NO) {
                     should_restart = 0;
                 } else if (svc->restart == RESTART_ON_FAILURE) {
@@ -274,6 +318,6 @@ void handle_process_exit(pid_t pid, int status) {
         case PROCESS_CRITICAL:
             mpanic("Critical PID 1 service crashed!");
             mreboot();
-            break;
+            break;  
     }
 }

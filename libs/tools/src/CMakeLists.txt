@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION "3.0")
 project(minitctl C)
 
 add_executable(minitctl minitctl.c)
