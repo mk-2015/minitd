@@ -2,24 +2,37 @@
 - The minimal init system for your custom linux distros!
 
 ## Prebuilt shell utilities
+* run-graphic-vda-networking.sh
+    - Run graphics [V]
+    - Run with disk.img [V]
+    - Run with networking [V]
 * run-graphic-vda.sh
     - Run graphics [V]
     - Run with disk.img [V]
+    - Run with networking [X]
 * run-graphic.sh
     - Run graphics [V]
     - Run with disk.img [X]
+    - Run with networking [X]
+* run-vda-networking.sh
+    - Run graphics [X]
+    - Run with disk.img [V]
+    - Run with networking [V]
 * run-vda.sh
     - Run graphics [X]
     - Run with disk.img [V]
+    - Run with networking [X]
 * run.sh
     - Run graphics [X]
     - Run with disk.img [X]
+    - Run with networking [X]
+
 
 ## Setup
 - Step 1:
 ```bash
 git clone https://github.com/mk-2015/minitd
-rm -rf base # Optoinal. for testinh dont remove
+rm -rf base # Optoinal. for testing dont remove
 ```
 
 - Step 2:
@@ -88,15 +101,6 @@ Runtime behavior:
 - `OptFile=<target filename or Name>` selects the preferred starting target.
 - `IGNORE=1` disables maxtarg constraints.
 
-Example section syntax in MiLang:
-```ini
-RootVar=1
-RootVar2=Root
-
-[MySection]
-MySectionVar=123
-```
-
 New configreader helpers support:
 - `readkey(cfg, "RootVar")`
 - `readkey(cfg, "MySection.MySectionVar")`
@@ -108,7 +112,7 @@ New configreader helpers support:
 - `list_num_sections(cfg)`
 
 ## Test
-- As mentioned in "Prebuilt shell utilities" there are multple shell utilities for with/out graphics and/or disk.img (/dev/vda)
+- As mentioned in "Prebuilt shell utilities" there are multple shell utilities for with/out graphics, with/out networking and/or disk.img (/dev/vda)
 
 ## How To
 
