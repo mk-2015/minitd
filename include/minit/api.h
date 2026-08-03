@@ -3,8 +3,8 @@
 
 #include <sys/types.h>
 #include <string.h>
+#include <stdarg.h>
 
-// Define missing mount flags if not present in system headers
 #ifndef MS_NOSUID
 #define MS_NOSUID 2
 #endif
@@ -52,6 +52,19 @@ typedef enum {
     MINIT_STATE_REBOOT
 } MinitSystemState;
 
+typedef enum {
+    JOB_TYPE_START,
+    JOB_TYPE_STOP
+} JobType;
+
+typedef struct {
+    char *name;
+    JobType type;
+    char *target;
+    int level;
+    char *exec;
+} MinitJob;
+
 extern volatile MinitSystemState g_system_state;
 
 extern const MountPoint mount_table[];
@@ -60,7 +73,8 @@ extern const size_t mount_table_size;
 extern const EnvironVar environ_default_table[];
 extern const size_t environ_default_table_size;
 
-void mpanic(const char* reason);
+void mpanic(const char* reason, ...);
+void mvpanic(const char *reason, va_list args);
 void mfreeze(void);
 void mupdate(void);
 
@@ -70,4 +84,11 @@ void mshutdown(int cmd);
 
 void redirect_init_logs(int idp);
 
+
+typedef struct Target {
+    const char* name;
+    unsigned int Level;
+} Target;
+
+void run_jobs_for_target(const char *target_name, int target_level, JobType type);
 #endif

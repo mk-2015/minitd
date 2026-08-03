@@ -1,22 +1,29 @@
-#include<minit/api.h>
-#include<minit/service.h>
-#include<minit/process.h>
-#include<minit/configreader.h>
+#include <minit/api.h>
+#include <minit/service.h>
+#include <minit/process.h>
+#include <minit/configreader.h>
 
-#include<unistd.h>
-#include<ctype.h>
-#include<stdio.h>
-#include<stdlib.h>
-#include<errno.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
 #include <dirent.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include<sys/types.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 ServiceIndex *ServiceTable = NULL;
 size_t ServiceTableCapacity = 0;
 size_t ServiceTableCount = 0;
+
+MinitJob *JobTable = NULL;
+size_t JobTableCount = 0;
+
+Target *ActivatedTargets = NULL;
+unsigned int ActivatedTargetCnt = 0;
 
 static int service_index_by_name(const char *name) {
     if (!name) return -1;
@@ -34,8 +41,10 @@ static bool service_active_or_running(ServiceIndex *si) {
 
 static bool service_matches_target(ServiceIndex *si, const char *target_name) {
     if (!si) return false;
-    if (!si->run_target || si->run_target[0] == '\0') return true;
-    return strcmp(si->run_target, target_name) == 0;
+    const char *effective_target = (si->run_target && si->run_target[0] != '\0') 
+                                   ? si->run_target 
+                                   : "basic.target";
+    return strcmp(effective_target, target_name) == 0;
 }
 
 static bool service_requires_satisfied(ServiceIndex *si) {
@@ -48,8 +57,13 @@ static bool service_requires_satisfied(ServiceIndex *si) {
     while (token) {
         char *dep = token;
         while (*dep && isspace((unsigned char)*dep)) dep++;
+        if (*dep == '\0') {
+            token = strtok_r(NULL, ",", &saveptr);
+            continue;
+        }
         char *end = dep + strlen(dep) - 1;
         while (end >= dep && isspace((unsigned char)*end)) *end-- = '\0';
+        
         int idx = service_index_by_name(dep);
         if (idx < 0 || !service_active_or_running(&ServiceTable[idx])) {
             free(copy);
@@ -71,8 +85,13 @@ static bool service_after_satisfied(ServiceIndex *si) {
     while (token) {
         char *dep = token;
         while (*dep && isspace((unsigned char)*dep)) dep++;
+        if (*dep == '\0') {
+            token = strtok_r(NULL, ",", &saveptr);
+            continue;
+        }
         char *end = dep + strlen(dep) - 1;
         while (end >= dep && isspace((unsigned char)*end)) *end-- = '\0';
+        
         int idx = service_index_by_name(dep);
         if (idx >= 0 && !service_active_or_running(&ServiceTable[idx])) {
             free(copy);
@@ -94,8 +113,13 @@ static bool service_before_blocked(ServiceIndex *si) {
     while (token) {
         char *dep = token;
         while (*dep && isspace((unsigned char)*dep)) dep++;
+        if (*dep == '\0') {
+            token = strtok_r(NULL, ",", &saveptr);
+            continue;
+        }
         char *end = dep + strlen(dep) - 1;
         while (end >= dep && isspace((unsigned char)*end)) *end-- = '\0';
+        
         int idx = service_index_by_name(dep);
         if (idx >= 0 && !service_active_or_running(&ServiceTable[idx])) {
             free(copy);
@@ -150,6 +174,175 @@ static void start_services_for_target(const char *target_name) {
     }
 }
 
+static int execute_job(MinitJob *job) {
+    if (!job || !job->exec) return -1;
+
+    printf("[ JOB  ] Running %s job '%s' (Level %d): %s\n",
+           (job->type == JOB_TYPE_START) ? "START" : "STOP",
+           job->name ? job->name : "unnamed",
+           job->level,
+           job->exec);
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("[ FAIL ] Fork failed for job");
+        return -1;
+    }
+
+    if (pid == 0) {
+        /* Child process: Parse command string into argv array without shell */
+        char *exec_copy = strdup(job->exec);
+        if (!exec_copy) _exit(1);
+
+        char *argv[64];
+        int argc = 0;
+        char *saveptr = NULL;
+        char *token = strtok_r(exec_copy, " \t\r\n", &saveptr);
+
+        while (token && argc < 63) {
+            argv[argc++] = token;
+            token = strtok_r(NULL, " \t\r\n", &saveptr);
+        }
+        argv[argc] = NULL;
+
+        if (argc > 0) {
+            /* Execute binary directly */
+            execvp(argv[0], argv);
+            perror("[ FAIL ] Direct execvp failed");
+        }
+
+        free(exec_copy);
+        _exit(127);
+    }
+
+    /* Non-blocking wait loop with smooth animated spinner */
+    const char *frames[] = {"[*  ]", "[ * ]", "[  *]", "[ * ]"};
+    int idx = 0;
+    int status;
+    pid_t res;
+
+    while ((res = waitpid(pid, &status, WNOHANG)) == 0) {
+        printf("\r%s Running job... [%s]", frames[idx], job->name ? job->name : "unnamed");
+        fflush(stdout);
+        idx = (idx + 1) % 4;
+        usleep(20000);
+    }
+
+    printf("\r\033[K");
+
+    if (res < 0) {
+        perror("[ FAIL ] waitpid failed for job");
+        return -1;
+    }
+
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+        return 0;
+    } else {
+        printf("[ WARN ] Job '%s' exited with error code %d\n", 
+               job->name ? job->name : "unnamed", 
+               WIFEXITED(status) ? WEXITSTATUS(status) : -1);
+        return -1;
+    }
+}
+
+void run_jobs_for_target(const char *target_name, int target_level, JobType type) {
+    for (size_t i = 0; i < JobTableCount; i++) {
+        MinitJob *job = &JobTable[i];
+        if (job->type != type) continue;
+
+        if (job->target && job->target[0] != '\0' && strcmp(job->target, target_name) != 0) {
+            continue;
+        }
+
+        if (job->level > 0 && job->level != target_level) {
+            continue;
+        }
+
+        execute_job(job);
+    }
+}
+
+void load_jobs_conf(const char *filepath) {
+    MiConfig *cfg = open_config(filepath);
+    if (!cfg) {
+        printf("[ INFO ] No jobs config found at %s (skipping)\n", filepath);
+        return;
+    }
+
+    unsigned int section_count = list_num_sections(cfg);
+    if (section_count == 0) {
+        close_config(cfg);
+        return;
+    }
+
+    char **sections = list_sections(cfg);
+    if (!sections) {
+        close_config(cfg);
+        return;
+    }
+
+    for (unsigned int i = 0; i < section_count; i++) {
+        const char *sec = sections[i];
+        if (!sec || sec[0] == '\0') continue;
+
+        MinitJob *new_table = realloc(JobTable, (JobTableCount + 1) * sizeof(MinitJob));
+        if (!new_table) {
+            perror("[ FAIL ] Failed to reallocate JobTable");
+            break;
+        }
+
+        JobTable = new_table;
+        MinitJob *job = &JobTable[JobTableCount];
+        memset(job, 0, sizeof(MinitJob));
+
+        job->name = strdup(sec);
+        job->type = JOB_TYPE_START;
+        job->level = 0;
+
+        char key_buf[512];
+
+        snprintf(key_buf, sizeof(key_buf), "%s.Name", sec);
+        char *val_name = readkey(cfg, key_buf);
+        if (val_name) {
+            if (job->name) free(job->name);
+            job->name = val_name;
+        }
+
+        snprintf(key_buf, sizeof(key_buf), "%s.Type", sec);
+        char *val_type = readkey(cfg, key_buf);
+        if (val_type) {
+            if (strcasecmp(val_type, "stop") == 0) {
+                job->type = JOB_TYPE_STOP;
+            }
+            free(val_type);
+        }
+
+        snprintf(key_buf, sizeof(key_buf), "%s.Target", sec);
+        char *val_target = readkey(cfg, key_buf);
+        if (val_target) {
+            job->target = val_target;
+        }
+
+        snprintf(key_buf, sizeof(key_buf), "%s.Level", sec);
+        char *val_level = readkey(cfg, key_buf);
+        if (val_level) {
+            job->level = atoi(val_level);
+            free(val_level);
+        }
+
+        snprintf(key_buf, sizeof(key_buf), "%s.Exec", sec);
+        char *val_exec = readkey(cfg, key_buf);
+        if (val_exec) {
+            job->exec = val_exec;
+        }
+
+        JobTableCount++;
+    }
+
+    free_key_list(sections);
+    close_config(cfg);
+}
+
 void _start_service_early(void)
 {
     printf("[ INFO ] Starting early services...\n");
@@ -175,11 +368,9 @@ void _start_service_early(void)
         char full_path[512];
         snprintf(full_path, sizeof(full_path), "%s/%s", service_dir_path, entry->d_name);
 
-        /* Open config using milang */
         MiConfig *cfg = open_config(full_path);
         if (!cfg) continue;
 
-        /* Check IGNORE flag */
         char *ignore_val = readkey(cfg, "IGNORE");
         if (ignore_val) {
             int should_ignore = atoi(ignore_val);
@@ -191,10 +382,9 @@ void _start_service_early(void)
             }
         }
 
-        /* Read Service Attributes */
         char *svc_name = readkey(cfg, "Name");
-        char *exec_path = readkey(cfg, "Exec"); // or Path / Executable path
-        char *policy_str = readkey(cfg, "Policy"); // e.g. "always" or "once"
+        char *exec_path = readkey(cfg, "Exec");
+        char *policy_str = readkey(cfg, "Policy");
         char *run_target = readkey(cfg, "RunOnTarget");
         char *state_target = readkey(cfg, "StateTarget");
         char *wants = readkey(cfg, "Wants");
@@ -223,16 +413,12 @@ void _start_service_early(void)
                 else if (strcmp(restart_str, "on-failure") == 0) restart = RESTART_ON_FAILURE;
             }
 
-            /* 1. Create and Register Service (store target selectors and dependencies) */
             ServiceIndex si = CreateService(policy, exec_path, svc_name, run_target, state_target, wants, requires, after, before, unit_type, restart);
-            if (RegisterService(&si)) {
-                ;
-            }
+            RegisterService(&si);
         } else {
             printf("[ WARN ] Invalid service file (missing Name or Exec): %s\n", entry->d_name);
         }
 
-        /* Clean up allocations */
         if (svc_name) free(svc_name);
         if (exec_path) free(exec_path);
         if (policy_str) free(policy_str);
@@ -251,7 +437,8 @@ void _start_service_early(void)
     closedir(dir);
     printf("[ OK ] Finished registering services\n");
 
-    /* Load targets and start services according to target order */
+    load_jobs_conf("/etc/minitd/jobfile.conf");
+
     const char *target_dir = "/etc/minitd/targetfiles";
     DIR *tdir = opendir(target_dir);
     if (!tdir) {
@@ -259,11 +446,10 @@ void _start_service_early(void)
         return;
     }
 
-    /* Simple target struct */
     typedef struct {
-        char *filename; /* e.g. basic.target */
+        char *filename;
         char *name;
-        char *next;    /* next target filename */
+        char *next;
         int level;
         bool isolate;
     } TargetEntry;
@@ -305,6 +491,10 @@ void _start_service_early(void)
             size_t newcap = (targets_cap == 0) ? 4 : targets_cap * 2;
             TargetEntry *nt = realloc(targets, newcap * sizeof(TargetEntry));
             if (!nt) {
+                if (tname) free(tname);
+                if (tnext) free(tnext);
+                if (tlevel) free(tlevel);
+                if (tisolate) free(tisolate);
                 close_config(tcfg);
                 break;
             }
@@ -314,14 +504,14 @@ void _start_service_early(void)
 
         targets[targets_count].filename = strdup(entry->d_name);
         targets[targets_count].name = tname ? tname : NULL;
-        targets[targets_count].next = (tnext && *tnext) ? tnext : NULL;
+        targets[targets_count].next = (tnext && *tnext) ? strdup(tnext) : NULL;
         targets[targets_count].level = tlevel ? atoi(tlevel) : 0;
         targets[targets_count].isolate = (tisolate && atoi(tisolate) != 0);
         targets_count++;
 
+        if (tnext) free(tnext);
         if (tlevel) free(tlevel);
         if (tisolate) free(tisolate);
-        if (!targets[targets_count-1].next && tnext) free(tnext);
         close_config(tcfg);
     }
 
@@ -373,7 +563,6 @@ void _start_service_early(void)
         return;
     }
 
-    /* Find starting target: prefer OptFile when available, otherwise basic.target, otherwise lowest allowed level */
     int start_index = -1;
     if (max_opt) {
         for (size_t i = 0; i < targets_count; i++) {
@@ -416,7 +605,8 @@ void _start_service_early(void)
         }
     }
 
-    /* Process target chain */
+    bool *visited = calloc(targets_count, sizeof(bool));
+
     char *current = strdup(targets[start_index].filename);
     while (current) {
         printf("[ INFO ] Activating target: %s\n", current);
@@ -426,6 +616,24 @@ void _start_service_early(void)
             if (strcmp(targets[i].filename, current) == 0) {
                 target_index = (int)i;
                 break;
+            }
+        }
+
+        if (target_index >= 0) {
+            if (visited && visited[target_index]) {
+                printf("[ ERROR ] Cyclic target dependency detected at '%s'! Breaking target chain.\n", current);
+                free(current);
+                break;
+            }
+            if (visited) visited[target_index] = true;
+
+            /* Record activated target into global ActivatedTargets array */
+            Target *new_act = realloc(ActivatedTargets, (ActivatedTargetCnt + 1) * sizeof(Target));
+            if (new_act) {
+                ActivatedTargets = new_act;
+                ActivatedTargets[ActivatedTargetCnt].name = strdup(targets[target_index].name ? targets[target_index].name : current);
+                ActivatedTargets[ActivatedTargetCnt].Level = (unsigned int)targets[target_index].level;
+                ActivatedTargetCnt++;
             }
         }
 
@@ -439,12 +647,13 @@ void _start_service_early(void)
             stop_non_target_services(current);
         }
 
+        int target_level = (target_index >= 0) ? targets[target_index].level : 0;
+        run_jobs_for_target(current, target_level, JOB_TYPE_START); 
+
         start_services_for_target(current);
 
-        /* Find next */
         char *next_target = NULL;
         if (target_index >= 0 && targets[target_index].next) {
-            /* If next target exists but is above max level, stop the chain. */
             int next_index = -1;
             for (size_t i = 0; i < targets_count; i++) {
                 if (strcmp(targets[i].filename, targets[target_index].next) == 0) {
@@ -463,9 +672,9 @@ void _start_service_early(void)
         current = next_target;
     }
 
+    if (visited) free(visited);
     if (max_opt) free(max_opt);
 
-    /* free target entries */
     for (size_t i = 0; i < targets_count; i++) {
         if (targets[i].filename) free(targets[i].filename);
         if (targets[i].name) free(targets[i].name);

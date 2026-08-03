@@ -13,6 +13,30 @@ extern const MountPoint mount_table[];
 extern const size_t mount_table_size;
 volatile MinitSystemState g_system_state = MINIT_STATE_RUNNING;
 
+typedef struct Target {
+    const char* name;
+    unsigned int Level;
+} Target;
+
+extern Target *ActivatedTargets;
+extern unsigned int ActivatedTargetCnt;
+
+void run_jobs_for_target(const char *target_name, int target_level, JobType type);
+
+static void run_shutdown_stop_jobs(void) {
+    printf("[ INFO ] Executing stop jobs...\n");
+
+    if (ActivatedTargetCnt > 0 && ActivatedTargets != NULL) {
+        for (ssize_t i = (ssize_t)ActivatedTargetCnt - 1; i >= 0; i--) {
+            if (ActivatedTargets[i].name) {
+                run_jobs_for_target(ActivatedTargets[i].name, (int)ActivatedTargets[i].Level, JOB_TYPE_STOP);
+            }
+        }
+    } else {
+        run_jobs_for_target(NULL, 0, JOB_TYPE_STOP);
+    }
+}
+
 void mshutdown(int cmd) {
     /* 1. Redirect logs to physical console and unbuffer stdout */
     redirect_init_logs(IDP_CONSOLE_DIRECT);
@@ -31,6 +55,8 @@ void mshutdown(int cmd) {
     signal(SIGHUP,  SIG_IGN);
 
     StopAllServices();
+
+    run_shutdown_stop_jobs();
 
     printf("[ INFO ] Terminating remaining user processes...\n");
 

@@ -87,6 +87,21 @@ void __etc_init(void)
     } else {
         perror("[ FAIL ] Could not open /etc/minitd/startexec.conf");
     }
+
+    fp = fopen("/etc/minitd/jobfile.conf", "w");
+    if (fp != NULL) {
+        fprintf(fp, "# Example Job Definition for minitd\n");
+        fprintf(fp, "# [MountRun]\n");
+        fprintf(fp, "# Name=MountRunLoop\n");
+        fprintf(fp, "# Type=start\n");
+        fprintf(fp, "# Target=basic.target\n");
+        fprintf(fp, "# Level=1\n");
+        fprintf(fp, "# Exec=/bin/sh -c \"mount /run/loop /\"\n");
+        fclose(fp);
+        printf("[ OK ] Created default template at /etc/minitd/jobfile.conf\n");
+    } else {
+        perror("[ FAIL ] Could not create /etc/minitd/jobfile.conf");
+    }
 }
 
 /*
